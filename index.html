@@ -1393,43 +1393,64 @@
                 return result;
             }
             
-            // Calculate flight duration considering time zone difference
-            // Saudi Arabia is 2.5 hours behind India
+            // Calculate flight duration - FIXED VERSION
             function calculateDuration(depDate, depTime, arrDate, arrTime, direction) {
-                // Create date objects for departure and arrival
-                const depDateTime = new Date(`${depDate}T${depTime}:00`);
-                const arrDateTime = new Date(`${arrDate}T${arrTime}:00`);
-                
-                let actualFlightTime;
-                
-                if (direction === 'outbound') {
-                    // India to Saudi Arabia
-                    // Since Saudi is 2.5 hours behind, add 2.5 hours to departure time
+                try {
+                    // Parse dates and times
+                    const depDateTime = new Date(`${depDate}T${depTime}`);
+                    const arrDateTime = new Date(`${arrDate}T${arrTime}`);
+                    
+                    // Check if dates are valid
+                    if (isNaN(depDateTime.getTime()) || isNaN(arrDateTime.getTime())) {
+                        return "Invalid date/time";
+                    }
+                    
+                    // Calculate time difference in milliseconds
+                    let timeDiff = arrDateTime.getTime() - depDateTime.getTime();
+                    
+                    // Adjust for timezone difference (India is 2.5 hours ahead of Saudi Arabia)
                     const timeZoneDiff = 2.5 * 60 * 60 * 1000; // 2.5 hours in milliseconds
-                    const depDateTimeSaudi = new Date(depDateTime + timeZoneDiff);
-                    actualFlightTime = arrDateTime - depDateTimeSaudi;
-                } else {
-                    // Saudi Arabia to India
-                    // Since India is 2.5 hours ahead, subtract 2.5 hours from arrival time
-                    const timeZoneDiff = 2.5 * 60 * 60 * 1000; // 2.5 hours in milliseconds
-                    const arrDateTimeIndia = new Date(arrDateTime - timeZoneDiff);
-                    actualFlightTime = arrDateTimeIndia - depDateTime;
+                    
+                    if (direction === 'outbound') {
+                        // India to Saudi Arabia: Add timezone difference
+                        timeDiff += timeZoneDiff;
+                    } else {
+                        // Saudi Arabia to India: Subtract timezone difference
+                        timeDiff -= timeZoneDiff;
+                    }
+                    
+                    // Handle negative duration (shouldn't happen with valid dates)
+                    if (timeDiff < 0) {
+                        return "Invalid duration";
+                    }
+                    
+                    // Convert to hours and minutes
+                    const hours = Math.floor(timeDiff / (1000 * 60 * 60));
+                    const minutes = Math.floor((timeDiff % (1000 * 60 * 60)) / (1000 * 60));
+                    
+                    return `${hours}hr(s) ${minutes}min(s)`;
+                } catch (error) {
+                    console.error("Error calculating duration:", error);
+                    return "Error";
                 }
-                
-                // Calculate hours and minutes
-                const hours = Math.floor(actualFlightTime / (1000 * 60 * 60));
-                const minutes = Math.floor((actualFlightTime % (1000 * 60 * 60)) / (1000 * 60));
-                
-                return `${hours}hr(s) ${minutes}min(s)`;
             }
             
             // Format date to "DAY DD MON" format
             function formatDate(dateStr) {
-                const date = new Date(dateStr);
-                const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
-                const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-                
-                return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+                try {
+                    const date = new Date(dateStr);
+                    if (isNaN(date.getTime())) {
+                        return "Invalid date";
+                    }
+                    
+                    const days = ['SUNDAY', 'MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY'];
+                    const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                    
+                    return `${days[date.getDay()]} ${date.getDate()} ${months[date.getMonth()]}`;
+                } catch (error) {
+                    console.error("Error formatting date:", error);
+                    return "Invalid date";
+                }
             }
             
             // Generate itinerary
